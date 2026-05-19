@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DinoCalc — Kenneth's Calculus Quest</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+:root{
+  --bg:#0a0e1a;--panel:#111827;--panel2:#1a2236;
+  --border:#2a9d8f;--border2:#e9c46a;--text:#e2e8f0;
+  --accent:#f4a261;--red:#e63946;--green:#52b788;
+  --hp-good:#52b788;--hp-mid:#e9c46a;--hp-low:#e63946;--xp:#7c3aed;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Press Start 2P',monospace;font-size:10px;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden;
+  background-image:radial-gradient(ellipse at 20% 50%,rgba(42,157,143,.07) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 20%,rgba(244,162,97,.05) 0%,transparent 40%);}
+
+/* ── TITLE ── */
+#title-screen{width:100%;max-width:700px;min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:22px;padding:32px 16px;}
+.title-pixel-dinos{display:flex;gap:8px;filter:drop-shadow(0 0 20px #2a9d8f99);animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.game-title{font-size:clamp(20px,6vw,36px);color:var(--accent);
+  text-shadow:3px 3px 0 #7c3aed,6px 6px 0 rgba(0,0,0,.5);text-align:center;line-height:1.5;}
+.game-subtitle{color:var(--border);font-size:9px;text-align:center;line-height:1.9;}
+.pixel-btn{background:var(--panel2);border:3px solid var(--border2);color:var(--border2);
+  padding:14px 28px;font-family:'Press Start 2P',monospace;font-size:10px;cursor:pointer;transition:all .15s;}
+.pixel-btn:hover{background:var(--border2);color:var(--bg);transform:translate(-2px,-2px);box-shadow:4px 4px 0 #7c3aed;}
+.pixel-btn:active{transform:translate(0,0);box-shadow:none;}
+.pixel-btn.sm{font-size:8px;padding:10px 18px;}
+.pixel-btn.green-btn{border-color:var(--green);color:var(--green);}
+.pixel-btn.green-btn:hover{background:var(--green);color:#000;}
+
+/* ── TUTORIAL ── */
+#tutorial-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;
+  flex-direction:column;align-items:center;justify-content:center;padding:12px;overflow-y:auto;}
+.tut-box{border:4px solid var(--border2);background:var(--panel);padding:18px 20px;
+  max-width:600px;width:100%;display:flex;flex-direction:column;gap:12px;}
+.tut-header{display:flex;justify-content:space-between;align-items:center;}
+.tut-title-text{font-size:9px;color:var(--accent);}
+.tut-progress{display:flex;gap:5px;}
+.tut-dot{width:10px;height:10px;border:2px solid var(--border2);}
+.tut-dot.done{background:var(--border2);}
+.tut-dot.current{background:var(--accent);border-color:var(--accent);}
+.tut-step{display:none;flex-direction:column;gap:10px;}
+.tut-step.active{display:flex;}
+.tut-narrator{display:flex;gap:12px;align-items:flex-start;}
+.tut-avatar{flex-shrink:0;border:3px solid var(--border2);padding:2px;}
+.tut-bubble{background:var(--panel2);border:2px solid var(--border);padding:10px 14px;
+  font-family:'VT323',monospace;font-size:19px;line-height:1.6;flex:1;}
+.tut-bubble b{color:var(--border2);}
+.tut-sprite-row{display:flex;justify-content:center;gap:24px;align-items:flex-end;padding:4px 0;}
+.tut-q-panel{background:var(--panel2);border:2px solid var(--xp);padding:12px;
+  display:flex;flex-direction:column;gap:8px;}
+.tut-topic-row{display:flex;justify-content:space-between;align-items:center;}
+.topic-badge{background:var(--xp);padding:3px 9px;font-size:7px;border:1px solid #a78bfa;}
+.tut-q-text{font-family:'VT323',monospace;font-size:22px;color:var(--border2);text-align:center;}
+.hint-row{font-family:'VT323',monospace;font-size:16px;color:#7c9ab8;}
+.tut-ans-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.tut-ans-btn{background:var(--panel);border:2px solid var(--border);color:var(--text);
+  padding:8px;font-family:'VT323',monospace;font-size:18px;cursor:pointer;transition:all .15s;text-align:left;}
+.tut-ans-btn:hover{background:var(--border);color:var(--bg);}
+.tut-ans-btn.correct{background:var(--green)!important;border-color:var(--green)!important;color:#000!important;}
+.tut-ans-btn.wrong{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important;}
+.tut-feedback{font-family:'VT323',monospace;font-size:18px;text-align:center;min-height:22px;}
+.tut-nav{display:flex;justify-content:flex-end;gap:8px;margin-top:4px;}
+.score-star{font-size:20px;}
+
+/* ── GAME ── */
+#game-wrapper{display:none;width:100%;max-width:720px;padding:12px;flex-direction:column;gap:8px;}
+.top-bar{display:flex;justify-content:space-between;align-items:center;
+  background:var(--panel);border:2px solid var(--border);padding:7px 12px;font-size:8px;}
+.player-info{display:flex;gap:12px;align-items:center;}
+.level-badge{background:var(--xp);padding:4px 8px;font-size:7px;border:2px solid #a78bfa;}
+.xp-bar-wrap{display:flex;align-items:center;gap:7px;}
+.bar-outer{width:90px;height:8px;background:#1e293b;border:1px solid #334155;}
+.bar-inner{height:100%;background:var(--xp);transition:width .5s;}
+.nav-tabs{display:flex;border:2px solid var(--border);overflow:hidden;}
+.nav-tab{flex:1;padding:7px 4px;text-align:center;background:var(--panel);border:none;
+  border-right:1px solid var(--border);color:#94a3b8;font-family:'Press Start 2P',monospace;
+  font-size:6px;cursor:pointer;transition:all .15s;}
+.nav-tab:last-child{border-right:none;}
+.nav-tab.active{background:var(--border);color:var(--bg);}
+#party-bar{display:flex;gap:6px;background:var(--panel);border:2px solid var(--border);
+  padding:7px;align-items:center;flex-wrap:wrap;}
+.party-label{font-size:7px;color:#64748b;}
+.party-slot{background:var(--panel2);border:2px solid var(--border);padding:2px;
+  cursor:pointer;position:relative;}
+.party-slot.active-dino{border-color:var(--border2);}
+.party-slot canvas{image-rendering:pixelated;display:block;}
+.party-slot-hp{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--hp-good);}
+
+/* ── ARENA ── */
+#battle-area{border:3px solid var(--border);position:relative;overflow:hidden;height:290px;}
+#arena-bg-canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;}
+#enemy-canvas,#player-canvas{position:absolute;image-rendering:pixelated;z-index:3;transition:transform 0.15s,filter 0.1s;}
+.bg-switcher{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.bg-btn{background:var(--panel2);border:2px solid var(--border);color:#94a3b8;
+  padding:3px 7px;font-family:'Press Start 2P',monospace;font-size:6px;cursor:pointer;transition:all .15s;}
+.bg-btn:hover,.bg-btn.active{border-color:var(--border2);color:var(--border2);}
+.audio-btn{background:var(--panel2);border:2px solid var(--border);color:#64748b;padding:3px 7px;font-family:'Press Start 2P',monospace;font-size:5px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.audio-btn.on{border-color:var(--border2);color:var(--border2);}
+.audio-btn:hover{border-color:var(--accent);color:var(--accent);}
+.enemy-zone{position:absolute;top:8px;right:8px;z-index:5;}
+.player-zone{position:absolute;bottom:8px;left:8px;z-index:5;}
+.name-plate{background:rgba(10,14,26,.88);border:2px solid var(--border2);
+  padding:5px 9px;font-size:8px;min-width:158px;backdrop-filter:blur(2px);}
+.name-plate.player-plate{border-color:var(--accent);}
+.hp-label{font-size:7px;color:var(--border2);}
+.hp-row{display:flex;align-items:center;gap:5px;margin-top:3px;}
+.hp-bar-outer{flex:1;height:9px;background:#1e293b;border:2px solid #334155;}
+.hp-bar-inner{height:100%;background:var(--hp-good);transition:width .4s,background .4s;}
+.hp-num{font-size:7px;white-space:nowrap;min-width:46px;text-align:right;}
+#dialogue-box{background:var(--panel);border:3px solid var(--border2);
+  padding:12px 16px;position:relative;min-height:68px;}
+#dialogue-text{font-family:'VT323',monospace;font-size:20px;color:var(--text);line-height:1.5;}
+.arrow-blink{position:absolute;bottom:8px;right:12px;color:var(--border2);
+  font-size:13px;animation:blink 1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+#question-panel{display:none;background:var(--panel2);border:3px solid var(--xp);
+  padding:14px;flex-direction:column;gap:11px;}
+.question-header{display:flex;justify-content:space-between;align-items:center;}
+.difficulty-stars{color:var(--border2);font-size:12px;}
+#question-text{font-family:'VT323',monospace;font-size:22px;color:var(--border2);
+  line-height:1.4;text-align:center;}
+.answer-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.answer-btn{background:var(--panel);border:2px solid var(--border);color:var(--text);
+  padding:9px 7px;font-family:'VT323',monospace;font-size:18px;cursor:pointer;
+  transition:all .15s;text-align:left;}
+.answer-btn:hover{background:var(--border);color:var(--bg);}
+.answer-btn.correct{background:var(--green)!important;border-color:var(--green)!important;color:#000!important;}
+.answer-btn.wrong{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important;}
+#action-menu{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.action-btn{background:var(--panel2);border:2px solid var(--border);color:var(--text);
+  padding:11px;font-family:'Press Start 2P',monospace;font-size:8px;cursor:pointer;
+  transition:all .15s;display:flex;flex-direction:column;gap:3px;}
+.action-btn:hover{background:var(--border);color:var(--bg);border-color:var(--border2);}
+.action-desc{color:#94a3b8;font-family:'VT323',monospace;font-size:14px;}
+.caught-badge{background:var(--green);color:#000;padding:2px 5px;font-size:6px;display:inline-block;margin-left:4px;}
+.damage-popup{position:absolute;font-family:'Press Start 2P',monospace;font-size:12px;font-weight:bold;
+  pointer-events:none;z-index:50;animation:dmg 1.2s ease-out forwards;}
+@keyframes dmg{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-60px) scale(1.3)}}
+#encounter-flash{display:none;position:fixed;inset:0;background:white;z-index:100;animation:enc .8s ease-out forwards;}
+@keyframes enc{0%{opacity:1}100%{opacity:0}}
+#levelup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:200;
+  flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+.levelup-box{border:4px solid var(--border2);background:var(--panel);
+  padding:26px 42px;text-align:center;animation:lvlpop .4s ease-out;}
+@keyframes lvlpop{0%{transform:scale(0.5)}100%{transform:scale(1)}}
+.levelup-title{font-size:13px;color:var(--border2);margin-bottom:10px;}
+.levelup-detail{font-family:'VT323',monospace;font-size:21px;color:var(--accent);white-space:pre-line;}
+/* MAP / DEX */
+.map-title,.dex-title{font-size:10px;color:var(--accent);text-align:center;margin-bottom:7px;}
+.zones-grid,.dex-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.zone-card{background:var(--panel2);border:2px solid var(--border);padding:9px 5px;text-align:center;
+  cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:4px;align-items:center;}
+.zone-card:hover:not(.locked){border-color:var(--border2);transform:translateY(-2px);}
+.zone-card.locked{opacity:.4;cursor:not-allowed;filter:grayscale(1);}
+.zone-card.current{border-color:var(--accent);box-shadow:0 0 10px var(--accent);}
+.zone-icon{font-size:22px;}.zone-name{font-size:6px;line-height:1.4;}
+.zone-topic{font-family:'VT323',monospace;font-size:12px;color:var(--border);}
+.zone-progress{font-size:6px;color:#94a3b8;}
+.dex-card{background:var(--panel2);border:2px solid var(--border);padding:8px;text-align:center;
+  display:flex;flex-direction:column;gap:3px;align-items:center;}
+.dex-card.unseen{filter:brightness(0.08);}
+.dex-name{font-size:6px;}.dex-type{font-family:'VT323',monospace;font-size:12px;color:var(--border);}
+</style>
+</head>
+<body>
+
+<div id="encounter-flash"></div>
+
+<div id="levelup-overlay">
+  <div class="levelup-box">
+    <div class="levelup-title">✨ LEVEL UP! ✨</div>
+    <div id="levelup-detail" class="levelup-detail"></div><br>
+    <button class="pixel-btn" onclick="closeLevelUp()">AWESOME!</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TUTORIAL OVERLAY
+══════════════════════════════════ -->
+<div id="tutorial-overlay">
+<div class="tut-box">
+  <div class="tut-header">
+    <span class="tut-title-text">📚 CALC ACADEMY</span>
+    <div class="tut-progress" id="tut-progress"></div>
+  </div>
+
+  <!-- STEP 0: Intro -->
+  <div class="tut-step active" id="tut-s0">
+    <div class="tut-narrator">
+      <canvas id="tut-av0" width="48" height="48" style="image-rendering:pixelated;width:56px;height:56px;" class="tut-avatar"></canvas>
+      <div class="tut-bubble">
+        Hello, <b>Kenneth</b>! I'm <b>Prof. Stego</b> 🦕<br>
+        Welcome to <b>DinoCalc</b> — where you battle wild dinosaurs by solving <b>real calculus problems!</b><br>
+        Every correct answer powers your attack. Every catch fills your <b>Dino-Dex!</b>
+      </div>
+    </div>
+    <div class="tut-sprite-row">
+      <canvas id="tut-enemy-preview" width="96" height="96" style="image-rendering:pixelated;width:80px;height:80px;"></canvas>
+      <canvas id="tut-player-preview" width="96" height="96" style="image-rendering:pixelated;width:80px;height:80px;"></canvas>
+    </div>
+    <div style="font-family:'VT323',monospace;font-size:17px;color:#94a3b8;text-align:center;">
+      ← Enemy (front view) &nbsp;&nbsp; Your dino (back view) →
+    </div>
+    <div class="tut-nav"><button class="pixel-btn sm" onclick="tutGoStep(1)">NEXT ▶</button></div>
+  </div>
+
+  <!-- STEP 1: How battles work -->
+  <div class="tut-step" id="tut-s1">
+    <div class="tut-narrator">
+      <canvas id="tut-av1" width="48" height="48" style="image-rendering:pixelated;width:56px;height:56px;" class="tut-avatar"></canvas>
+      <div class="tut-bubble">
+        In battle you have <b>4 actions:</b><br>
+        ⚔ <b>FIGHT</b> — answer a question to deal damage<br>
+        🥚 <b>CAPTURE</b> — answer 3 in a row to catch it!<br>
+        💊 <b>ITEM</b> — use a Calc Potion to heal<br>
+        🏃 <b>RUN</b> — flee to the world map<br><br>
+        Wrong answers let the enemy <b>counterattack!</b>
+      </div>
+    </div>
+    <div class="tut-nav">
+      <button class="pixel-btn sm" onclick="tutGoStep('intro')">◀ BACK</button>
+      <button class="pixel-btn sm" onclick="tutGoStep('q')">NEXT ▶</button>
+    </div>
+  </div>
+
+  <!-- STEP 2–9: Questions (8 warm-up questions) -->
+  <div class="tut-step" id="tut-s-q">
+    <div class="tut-narrator">
+      <canvas id="tut-av-q" width="48" height="48" style="image-rendering:pixelated;width:56px;height:56px;" class="tut-avatar"></canvas>
+      <div class="tut-bubble" id="tut-q-intro">Time to practice!</div>
+    </div>
+    <div class="tut-q-panel">
+      <div class="tut-topic-row">
+        <span class="topic-badge" id="tut-topic-badge">TOPIC</span>
+        <span style="font-family:'VT323',monospace;font-size:15px;color:#94a3b8;" id="tut-counter">1/8</span>
+      </div>
+      <div class="tut-q-text" id="tut-q-text">...</div>
+      <div class="hint-row" id="tut-hint"></div>
+      <div class="tut-ans-grid" id="tut-ans-grid"></div>
+      <div class="tut-feedback" id="tut-feedback"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Done -->
+  <div class="tut-step" id="tut-s-done">
+    <div class="tut-narrator">
+      <canvas id="tut-av-done" width="48" height="48" style="image-rendering:pixelated;width:56px;height:56px;" class="tut-avatar"></canvas>
+      <div class="tut-bubble" id="tut-done-msg">...</div>
+    </div>
+    <div class="tut-sprite-row" id="tut-score-stars"></div>
+    <div class="tut-nav"><button class="pixel-btn green-btn" onclick="endTutorial()">START QUEST! ▶</button></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     TITLE SCREEN
+══════════════════════════════════ -->
+<div id="title-screen">
+  <div class="title-pixel-dinos">
+    <canvas id="title-c1" width="64" height="64" style="image-rendering:pixelated;width:72px;height:72px;"></canvas>
+    <canvas id="title-c2" width="64" height="64" style="image-rendering:pixelated;width:72px;height:72px;"></canvas>
+  </div>
+  <div class="game-title">DINO<br>CALC</div>
+  <div class="game-subtitle">
+    Kenneth's Calculus Quest<br>
+    ─────────────────────<br>
+    Catch · Battle · Learn
+  </div>
+  <button class="pixel-btn" onclick="startGame()">▶ NEW GAME</button>
+  <div style="font-size:7px;color:#475569;margin-top:6px;">v3.0 — Tutorial + 8-Bit Sprites Edition</div>
+</div>
+
+<!-- ══════════════════════════════════
+     GAME SCREEN
+══════════════════════════════════ -->
+<div id="game-wrapper">
+  <div class="top-bar">
+    <div class="player-info">
+      <span>🎓 Kenneth</span>
+      <span class="level-badge">LV <span id="player-level">1</span></span>
+    </div>
+    <div class="xp-bar-wrap">
+      <span style="font-size:7px;color:#a78bfa">XP</span>
+      <div class="bar-outer"><div class="bar-inner" id="xp-bar" style="width:0%"></div></div>
+      <span id="xp-label" style="font-size:7px;color:#a78bfa">0/100</span>
+    </div>
+    <div id="coins-display" style="font-size:8px;color:var(--border2)">🪙 0</div>
+    <div style="display:flex;gap:4px;">
+      <button class="audio-btn on" id="mute-music-btn" onclick="toggleMusic()">♪ ON</button>
+      <button class="audio-btn on" id="mute-sfx-btn"   onclick="toggleSFX()">SFX</button>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('battle')">⚔ BATTLE</button>
+    <button class="nav-tab" onclick="showTab('map')">🗺 MAP</button>
+    <button class="nav-tab" onclick="showTab('dex')">📖 DEX</button>
+  </div>
+
+  <div id="party-bar">
+    <span class="party-label">PARTY:</span>
+    <div id="party-slots" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+  </div>
+
+  <!-- ── BATTLE TAB ── -->
+  <div id="tab-battle" style="display:flex;flex-direction:column;gap:8px;">
+    <div class="bg-switcher">
+      <span style="font-size:6px;color:#64748b">BG:</span>
+      <button class="bg-btn active" id="bg-btn-night"   onclick="setBg('night')">🌙 NIGHT</button>
+      <button class="bg-btn"        id="bg-btn-cave"    onclick="setBg('cave')">🪨 CAVE</button>
+      <button class="bg-btn"        id="bg-btn-jungle"  onclick="setBg('jungle')">🌿 JUNGLE</button>
+      <button class="bg-btn"        id="bg-btn-volcano" onclick="setBg('volcano')">🌋 VOLCANO</button>
+      <button class="bg-btn"        id="bg-btn-ocean"   onclick="setBg('ocean')">🌊 OCEAN</button>
+      <button class="bg-btn"        id="bg-btn-tundra"  onclick="setBg('tundra')">❄ TUNDRA</button>
+      <button class="bg-btn"        id="bg-btn-desert"  onclick="setBg('desert')">🏜 DESERT</button>
+      <button class="bg-btn"        id="bg-btn-swamp"   onclick="setBg('swamp')">🌫 SWAMP</button>
+    </div>
+
+    <div id="battle-area">
+      <canvas id="arena-bg-canvas"></canvas>
+      <div class="enemy-zone">
+        <div class="name-plate">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span id="enemy-name">???</span>
+            <span id="enemy-caught" class="caught-badge" style="display:none">CAUGHT</span>
+          </div>
+          <div style="font-size:6px;color:#94a3b8" id="enemy-type">TYPE: ???</div>
+          <div class="hp-row">
+            <span class="hp-label">HP</span>
+            <div class="hp-bar-outer"><div class="hp-bar-inner" id="enemy-hp-bar"></div></div>
+            <span class="hp-num" id="enemy-hp-num">--/--</span>
+          </div>
+        </div>
+      </div>
+      <div class="player-zone">
+        <div class="name-plate player-plate">
+          <div>Kenneth's <span id="player-dino-name">--</span></div>
+          <div style="font-size:6px;color:#94a3b8" id="player-dino-type">--</div>
+          <div class="hp-row">
+            <span class="hp-label">HP</span>
+            <div class="hp-bar-outer"><div class="hp-bar-inner" id="player-hp-bar"></div></div>
+            <span class="hp-num" id="player-hp-num">--/--</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="enemy-canvas" width="96" height="96"></canvas>
+      <canvas id="player-canvas" width="96" height="96"></canvas>
+    </div>
+
+    <div id="dialogue-box">
+      <div id="dialogue-text">Welcome to DinoCalc!</div>
+      <span class="arrow-blink" id="arrow-blink">▼</span>
+    </div>
+
+    <div id="question-panel">
+      <div class="question-header">
+        <span class="topic-badge" id="q-topic">TOPIC</span>
+        <span class="difficulty-stars" id="q-stars">★★☆</span>
+      </div>
+      <div id="question-text">...</div>
+      <div class="hint-row" id="q-hint"></div>
+      <div class="answer-grid" id="answer-grid"></div>
+    </div>
+
+    <div id="action-menu">
+      <button class="action-btn" onclick="actionFight()">⚔ FIGHT<span class="action-desc">Answer to attack</span></button>
+      <button class="action-btn" onclick="actionCapture()">🥚 CAPTURE<span class="action-desc">3 correct = caught!</span></button>
+      <button class="action-btn" id="heal-btn" onclick="actionHeal()">💊 ITEM<span class="action-desc" id="heal-desc">Potions: 3</span></button>
+      <button class="action-btn" onclick="actionRun()">🏃 RUN<span class="action-desc">Flee to map</span></button>
+    </div>
+  </div>
+
+  <!-- ── MAP TAB ── -->
+  <div id="tab-map" style="display:none;">
+    <div class="map-title">📍 CALC WORLD — Choose a Zone</div>
+    <div class="zones-grid" id="zones-grid"></div>
+  </div>
+
+  <!-- ── DEX TAB ── -->
+  <div id="tab-dex" style="display:none;">
+    <div class="dex-title">📖 DINO-DEX — <span id="dex-count">0</span>/22 Caught</div>
+    <div class="dex-grid" id="dex-grid"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  PIXEL SPRITE ENGINE  — 16×16 grid, palette index 0=transparent
+// ══════════════════════════════════════════════════════════
+
+const PAL={
+  green: [null,'#1a4726','#2d7a3a','#52b788','#95d5b2','#e9c46a','#d4a017','#fff','#1a1a1a'],
+  teal:  [null,'#0d3b4f','#1a6b7c','#2a9d8f','#52d9c7','#e9c46a','#d4a017','#fff','#1a1a1a'],
+  red:   [null,'#4a0f0f','#8b2020','#dc2626','#f87171','#facc15','#d4a017','#fff','#1a1a1a'],
+  purple:[null,'#2e1065','#5b21b6','#7c3aed','#a78bfa','#e9c46a','#d4a017','#fff','#1a1a1a'],
+  brown: [null,'#3b1a06','#78350f','#b45309','#d97706','#52b788','#2a9d8f','#fff','#1a1a1a'],
+  blue:  [null,'#082f49','#0c4a6e','#0369a1','#38bdf8','#e9c46a','#d4a017','#fff','#1a1a1a'],
+  orange:[null,'#431407','#9a3412','#ea580c','#fb923c','#52b788','#2a9d8f','#fff','#1a1a1a'],
+  gray:  [null,'#1e1e1e','#3a3a3a','#606060','#a0a0a0','#e9c46a','#d4a017','#fff','#1a1a1a'],
+  pink:  [null,'#4a0820','#8b1538','#dc2664','#f87191','#facc15','#d4a017','#fff','#1a1a1a'],
+  lime:  [null,'#1a3a06','#3a7010','#6aaa18','#aadd50','#e9c46a','#d4a017','#fff','#1a1a1a'],
+};
+
+// Sprite registry: front + back are separate grids
+const SF={}, SB={};
+
+function defSprite(key, pal, frontGrid, backGrid){
+  SF[key]={pal, grid:frontGrid};
+  // backGrid: if not provided, create a "turned away" version (darker center palette shift)
+  SB[key]={pal, grid: backGrid || frontGrid, back: !backGrid};
+}
+
+function drawDino(canvas, dinoKey, isBack, px){
+  const sk = SPRITE_MAP[dinoKey]||'stegosaurus';
+  const sd = isBack ? SB[sk] : SF[sk];
+  const pal= PAL[sd.pal];
+  const grid= sd.grid;
+  const N=16, S=px||4;
+  canvas.width=N*S; canvas.height=N*S;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.imageSmoothingEnabled=false;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      // For back sprites without explicit grid: mirror horizontally + darken
+      const col = (isBack && sd.back) ? (N-1-c) : c;
+      let v=grid[r*N+col];
+      if(!v) continue;
+      // back darkening for auto-generated back
+      if(isBack && sd.back && v>=2 && v<=4) v=Math.max(1,v-1);
+      const color=pal[v];
+      if(!color) continue;
+      ctx.fillStyle=color;
+      ctx.fillRect(c*S, r*S, S, S);
+    }
+  }
+}
+
+// ─── FRONT SPRITES (enemy faces player) ───────────────────
+
+// STEGOSAURUS — plates along back, bulky quadruped
+defSprite('stegosaurus','green',[
+  0,0,0,0,0,5,0,5,0,3,0,0,0,0,0,0,
+  0,0,0,0,5,5,5,5,5,5,3,0,0,0,0,0,
+  0,0,0,5,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,3,3,3,8,3,3,3,3,8,3,3,3,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,3,3,3,3,4,3,3,4,3,3,3,3,3,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,0,3,3,3,0,0,0,0,3,3,3,0,0,0,0,
+  0,0,3,3,0,0,0,0,0,0,3,3,0,0,0,0,
+  0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,
+  0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+],
+// BACK: plates visible on top, rump facing us
+[
+  0,0,0,5,0,5,0,5,0,5,0,0,0,0,0,0,
+  0,0,5,5,5,5,5,5,5,5,5,0,0,0,0,0,
+  0,0,2,2,2,2,2,2,2,2,2,2,0,0,0,0,
+  0,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,
+  2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,
+  2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,
+  0,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,
+  0,0,2,2,2,2,4,4,4,2,2,2,0,0,0,0,
+  0,0,0,2,2,2,2,2,2,2,2,0,0,0,0,0,
+  0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,
+  0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,0,
+  0,0,2,2,2,0,0,0,0,2,2,2,0,0,0,0,
+  0,0,2,2,0,0,0,0,0,0,2,2,0,0,0,0,
+  0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,
+  0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+]);
+
+// TRICERATOPS — 3 horns, large frill
+defSprite('triceratops','teal',[
+  0,0,0,0,6,0,6,0,6,0,0,0,0,0,0,0,
+  0,0,0,0,6,6,6,6,6,6,0,0,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,3,3,3,8,3,3,3,8,3,3,3,3,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,4,4,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,0,3,3,3,0,0,0,3,3,3,0,0,0,0,0,
+  0,0,3,3,0,0,0,0,0,3,3,0,0,0,0,0,
+  0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,
+  0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+],
+// BACK: broad frill visible from behind, tail to left
+[
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,4,4,4,4,4,4,0,0,0,0,0,0,
+  0,0,0,4,4,4,4,4,4,4,4,0,0,0,0,0,
+  0,0,4,4,4,4,4,4,4,4,4,4,0,0,0,0,
+  0,3,3,4,3,3,3,3,3,3,4,3,3,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  6,6,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  6,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,
+  0,0,3,3,3,0,0,0,3,3,3,0,0,0,0,0,
+  0,0,3,3,0,0,0,0,0,3,3,0,0,0,0,0,
+  0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,
+  0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+]);
+
+// VELOCIRAPTOR — bipedal, sickle claw, lean
+defSprite('velociraptor','orange',[
+  0,0,0,0,0,0,3,3,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,
+  0,0,0,0,0,3,8,3,3,6,6,0,0,0,0,0,
+  0,0,0,0,3,3,3,3,3,3,6,0,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,
+  0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,
+  0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,
+  0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,
+  0,0,0,3,3,0,3,3,3,0,0,0,0,0,0,0,
+  0,0,3,3,0,0,0,3,3,3,0,0,0,0,0,0,
+  0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+],
+// BACK: tail stretched out, spine visible
+[
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,
+  0,3,3,3,2,3,3,2,3,3,3,0,0,0,0,0,
+  3,3,3,2,3,3,3,3,2,3,3,3,0,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,
+  0,0,0,3,3,3,3,3,0,0,0,0,0,0,0,0,
+  3,3,3,0,3,3,3,0,0,0,0,0,0,0,0,0,
+  3,3,0,0,3,3,3,0,0,0,0,0,0,0,0,0,
+  0,0,0,3,3,0,0,3,3,0,0,0,0,0,0,0,
+  0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+]);
+
+// PTERODACTYL — wings spread wide
+defSprite('pterodactyl','purple',[
+  3,3,0,0,0,0,0,3,3,0,0,0,0,0,3,3,
+  3,3,3,0,0,0,3,3,3,3,0,0,0,3,3,3,
+  0,3,3,3,0,3,3,3,3,3,3,0,3,3,3,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,0,0,3,3,3,3,8,3,3,3,3,3,0,0,0,
+  0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,
+  0,0,0,0,0,0,3,3,3,3,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,
+  0,0,0,0,0,1,1,0,1,1,0,0,0,0,0,0,
+  0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0,
+  0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+],
+// BACK: wings from behind, spine ridge prominent
+[
+  3,3,0,0,0,0,0,0,0,0,0,0,0,3,3,0,
+  3,3,3,0,0,0,0,0,0,0,0,0,3,3,3,0,
+  0,3,3,3,0,0,0,0,0,0,0,3,3,3,0,0,
+  0,0,3,3,3,0,0,0,0,0,3,3,3,0,0,0,
+  0,0,0,3,3,3,3,4,3,3,3,3,0,0,0,0,
+  0,0,0,0,3,3,4,4,4,3,3,0,0,0,0,0,
+  0,0,0,0,0,3,3,4,3,3,0,0,0,0,0,0,
+  0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,
+  0,0,0,0,0,1,1,0,1,1,0,0,0,0,0,0,
+  0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0,
+  0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+]);
+
+// T-REX — massive head, tiny arms, thick legs
+defSprite('tyrannosaurus','red',[
+  0,0,0,0,3,3,3,3,3,0,0,0,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,0,0,0,0,0,0,
+  0,0,3,3,3,8,3,3,8,3,3,6,6,0,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,6,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,0,0,0,0,3,3,3,3,0,0,0,0,0,0,
+  0,0,0,0,0,3,3,0,0,3,3,0,0,0,0,0,
+  0,0,0,0,3,3,0,0,0,0,3,3,0,0,0,0,
+  0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,
+  0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+],
+// BACK: massive torso from behind, thick tail left
+[
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  3,3,3,3,3,2,3,3,3,2,3,3,3,3,0,0,
+  3,3,3,2,3,3,3,3,3,3,3,2,3,3,3,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  3,3,0,0,0,0,3,3,3,3,0,0,0,0,0,0,
+  3,0,0,0,0,3,3,0,0,3,3,0,0,0,0,0,
+  0,0,0,0,3,3,0,0,0,0,3,3,0,0,0,0,
+  0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,
+  0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+]);
+
+// SPINOSAURUS — large sail on back
+defSprite('spinosaurus','blue',[
+  0,0,4,4,4,4,4,4,4,4,4,0,0,0,0,0,
+  0,0,4,3,3,3,3,3,3,3,4,0,0,0,0,0,
+  0,4,4,3,3,3,3,3,3,3,4,4,0,0,0,0,
+  4,4,3,3,3,8,3,3,8,3,3,4,4,0,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,
+  0,0,0,3,3,3,0,0,3,3,3,0,0,0,0,0,
+  0,0,0,3,3,0,0,0,0,3,3,0,0,0,0,0,
+  0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,
+  0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+],
+// BACK: massive sail dominates the view
+[
+  0,0,0,4,4,4,4,4,4,4,4,4,0,0,0,0,
+  0,0,4,4,4,4,4,4,4,4,4,4,4,0,0,0,
+  0,4,4,4,4,4,4,4,4,4,4,4,4,4,0,0,
+  4,4,4,3,3,3,3,3,3,3,3,3,4,4,4,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,
+  0,0,0,3,3,3,0,0,3,3,3,0,0,0,0,0,
+  0,0,0,3,3,0,0,0,0,3,3,0,0,0,0,0,
+  0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,
+  0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+]);
+
+// ANKYLOSAURUS — armored plates + club tail
+defSprite('ankylosaurus','gray',[
+  0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,
+  0,0,0,0,3,3,3,3,3,0,0,0,0,0,0,0,
+  0,0,0,3,3,8,3,3,8,3,3,0,0,0,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  3,3,5,3,5,3,5,3,5,3,5,3,3,3,3,5,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,5,5,
+  3,3,5,3,5,3,5,3,5,3,5,3,3,5,5,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  0,0,3,3,3,0,0,0,0,3,3,3,0,0,0,0,
+  0,0,3,3,0,0,0,0,0,0,3,3,0,0,0,0,
+  0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,
+  0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+],
+// BACK: armored back plates fill view, club tail to left
+[
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,5,5,5,5,5,5,5,5,5,5,5,0,0,0,0,
+  5,5,5,5,5,5,5,5,5,5,5,5,5,0,0,0,
+  3,5,3,5,3,5,3,5,3,5,3,5,3,5,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  3,5,3,5,3,5,3,5,3,5,3,5,3,3,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  5,5,0,0,3,3,3,3,3,3,0,0,0,0,0,0,
+  5,5,5,0,0,3,3,3,3,0,0,0,0,0,0,0,
+  0,0,3,3,3,0,0,0,3,3,3,0,0,0,0,0,
+  0,0,3,3,0,0,0,0,0,3,3,0,0,0,0,0,
+  0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,
+  0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+]);
+
+// MOSASAURUS — large sea predator
+defSprite('mosasaurus','blue',[
+  3,3,0,0,0,0,0,0,0,0,0,0,0,0,3,3,
+  3,3,3,0,0,0,0,0,0,0,0,0,3,3,3,0,
+  0,3,3,3,3,0,0,0,0,0,3,3,3,3,0,0,
+  0,0,3,3,3,3,8,3,3,3,3,3,3,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,
+  0,3,3,5,3,3,3,3,3,3,3,5,3,3,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,0,0,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,0,3,3,3,0,0,0,0,3,3,3,0,0,0,0,
+  0,0,3,3,0,0,0,0,0,0,3,3,0,0,0,0,
+  0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,
+  0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+],
+// BACK: dorsal fins and tail fins visible
+[
+  0,0,0,0,0,4,4,4,4,4,0,0,0,0,0,0,
+  0,0,0,0,4,4,4,4,4,4,4,0,0,0,0,0,
+  0,0,0,4,4,4,4,4,4,4,4,4,0,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,
+  0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,
+  0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,
+  3,3,0,3,3,3,3,3,3,3,3,0,0,0,0,0,
+  3,3,3,0,0,3,3,3,3,3,0,0,0,0,0,0,
+  0,3,0,0,0,3,3,3,3,0,0,0,0,0,0,0,
+  0,0,3,3,3,0,0,0,3,3,3,0,0,0,0,0,
+  0,0,3,3,0,0,0,0,0,3,3,0,0,0,0,0,
+  0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,
+  0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+]);
+
+// Mapping: all 22 dino keys → sprite key
+const SPRITE_MAP={
+  stegosaurus:'stegosaurus', triceratops:'triceratops',
+  velociraptor:'velociraptor', ankylosaurus:'ankylosaurus',
+  pterodactyl:'pterodactyl', brachiosaurus:'stegosaurus',
+  spinosaurus:'spinosaurus', diplodocus:'stegosaurus',
+  pachycephalosaurus:'ankylosaurus', parasaurolophus:'triceratops',
+  mosasaurus:'mosasaurus', iguanodon:'triceratops',
+  carnotaurus:'tyrannosaurus', allosaurus:'tyrannosaurus',
+  kentrosaurus:'stegosaurus', therizinosaurus:'velociraptor',
+  yutyrannus:'velociraptor', carcharodontosaurus:'tyrannosaurus',
+  gallimimus:'velociraptor', oviraptor:'velociraptor',
+  tyrannosaurus:'tyrannosaurus', giganotosaurus:'tyrannosaurus',
+};
+
+// ══════════════════════════════════════════════════════════
+//  8-BIT BATTLE BACKGROUNDS  (8 styles)
+// ══════════════════════════════════════════════════════════
+
+const BG_CFG={
+  night:   {sky:['#040d18','#0a1a2e','#0d2040'],gnd:['#0e2a18','#091f10','#061408'],  stars:true, moon:true,  trees:false,stalact:false,lava:false, water:false,vines:false,snow:false, sand:false,fog:false},
+  cave:    {sky:['#080808','#0f0f0f','#181818'],gnd:['#1a1008','#100804','#080402'],  stars:false,moon:false, trees:false,stalact:true, lava:false, water:false,vines:false,snow:false, sand:false,fog:false},
+  jungle:  {sky:['#041404','#082808','#104410'],gnd:['#082808','#062006','#041204'],  stars:false,moon:false, trees:true, stalact:false,lava:false, water:false,vines:true, snow:false, sand:false,fog:false},
+  volcano: {sky:['#180404','#280808','#3a1010'],gnd:['#1a0a04','#2a0a06','#3a0808'],  stars:false,moon:false, trees:false,stalact:false,lava:true,  water:false,vines:false,snow:false, sand:false,fog:false},
+  ocean:   {sky:['#030e28','#08204a','#0a2e68'],gnd:['#04102a','#030b18','#02070e'],  stars:true, moon:true,  trees:false,stalact:false,lava:false, water:true, vines:false,snow:false, sand:false,fog:false},
+  tundra:  {sky:['#b0c8e8','#c8daf0','#ddeeff'],gnd:['#d0e8f8','#b8d4ec','#a0c0e0'],  stars:false,moon:false, trees:false,stalact:false,lava:false, water:false,vines:false,snow:true,  sand:false,fog:false},
+  desert:  {sky:['#8b5a1a','#c47c22','#e8a840'],gnd:['#c89040','#a87030','#905020'],  stars:false,moon:false, trees:false,stalact:false,lava:false, water:false,vines:false,snow:false, sand:true, fog:false},
+  swamp:   {sky:['#0a1a0a','#142814','#1e3c1e'],gnd:['#0a1a08','#081408','#060e06'],  stars:false,moon:false, trees:true, stalact:false,lava:false, water:false,vines:true, snow:false, sand:false,fog:true},
+};
+
+let bgStyle='night', bgTick=0, bgRaf=null;
+
+function setBg(s){
+  bgStyle=s;
+  document.querySelectorAll('.bg-btn').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('bg-btn-'+s);
+  if(el)el.classList.add('active');
+  drawBg();playMusicForBiome(s);
+}
+
+function triLerp(cols,t){
+  const n=cols.length-1, i=Math.min(n-1,Math.floor(t*n));
+  return lerpHex(cols[i],cols[i+1],(t*n)-i);
+}
+function lerpHex(a,b,t){
+  const p=s=>parseInt(s,16);
+  const ri=Math.round(p(a.slice(1,3))+(p(b.slice(1,3))-p(a.slice(1,3)))*t);
+  const gi=Math.round(p(a.slice(3,5))+(p(b.slice(3,5))-p(a.slice(3,5)))*t);
+  const bi=Math.round(p(a.slice(5,7))+(p(b.slice(5,7))-p(a.slice(5,7)))*t);
+  return `#${ri.toString(16).padStart(2,'0')}${gi.toString(16).padStart(2,'0')}${bi.toString(16).padStart(2,'0')}`;
+}
+
+function drawBg(){
+  const canvas=document.getElementById('arena-bg-canvas');
+  if(!canvas)return;
+  const area=document.getElementById('battle-area');
+  const W=area.clientWidth||680, H=area.clientHeight||290;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+  const P=4, cfg=BG_CFG[bgStyle];
+  const skyH=Math.round(H*0.58/P)*P, gndH=H-skyH;
+
+  // Sky gradient
+  for(let y=0;y<skyH;y+=P){ctx.fillStyle=triLerp(cfg.sky,y/skyH);ctx.fillRect(0,y,W,P);}
+  // Ground gradient
+  for(let y=skyH;y<H;y+=P){ctx.fillStyle=triLerp(cfg.gnd,(y-skyH)/gndH);ctx.fillRect(0,y,W,P);}
+  // Checkerboard horizon seam
+  for(let x=0;x<W;x+=P*2){ctx.fillStyle=cfg.gnd[0];ctx.fillRect(x,skyH-P,P,P*2);}
+
+  if(cfg.stars)      drawStars(ctx,W,skyH,P);
+  if(cfg.moon)       drawMoon(ctx,W,P);
+  if(cfg.stalact)    drawStalactites(ctx,W,skyH,P);
+  if(cfg.vines)      drawVines(ctx,W,H,skyH,P);
+  if(cfg.trees)      drawTrees(ctx,W,skyH,P,bgStyle);
+  if(cfg.lava)       drawLava(ctx,W,H,skyH,P);
+  if(cfg.water)      drawWater(ctx,W,H,skyH,P);
+  if(cfg.snow)       drawSnow(ctx,W,skyH,P);
+  if(cfg.sand)       drawSand(ctx,W,skyH,P);
+  if(cfg.fog)        drawFog(ctx,W,skyH,P);
+
+  // Platforms
+  const platC={night:'#1a3a1a',cave:'#2a1a10',jungle:'#1a4410',volcano:'#2a1808',ocean:'#082050',tundra:'#b0cce0',desert:'#a06820',swamp:'#1a2a10'}[bgStyle];
+  const ex=Math.round(W*0.55/P)*P;
+  ctx.fillStyle=platC;
+  for(let x=0;x<W*0.42;x+=P)ctx.fillRect(x,skyH,P,P); // player platform
+  for(let x=ex;x<W;x+=P)ctx.fillRect(x,skyH-P*2,P,P*2); // enemy platform (elevated)
+}
+
+function drawStars(ctx,W,skyH,P){
+  [[.08,.15],[.18,.05],[.35,.25],[.45,.08],[.55,.18],[.65,.06],[.75,.28],[.85,.12],[.92,.22],[.28,.38],[.50,.35],[.72,.40],[.12,.42],[.88,.38],[.40,.02]].forEach(([rx,ry],i)=>{
+    const twinkle=Math.sin(bgTick*.06+i*.9)>.4;
+    ctx.fillStyle=twinkle?'#ffffff':'#8888bb';
+    ctx.fillRect(Math.round(rx*W/P)*P,Math.round(ry*skyH/P)*P,P,P);
+  });
+}
+function drawMoon(ctx,W,P){
+  const mx=W-72,my=14,mc='#ffffaa';
+  for(let r=-3;r<=3;r++)for(let c=-3;c<=3;c++)if(r*r+c*c<=10){ctx.fillStyle=mc;ctx.fillRect(mx+c*P,my+r*P,P,P);}
+  ctx.fillStyle='#bbbb88';ctx.fillRect(mx+P,my,P,P);ctx.fillRect(mx+P*2,my+P,P,P);
+}
+function drawStalactites(ctx,W,skyH,P){
+  [.05,.14,.24,.38,.50,.62,.74,.86,.94].forEach((rx,i)=>{
+    const x=Math.round(rx*W/P)*P,h=P*(3+i%5);
+    ctx.fillStyle='#181818';for(let y=0;y<h;y+=P)ctx.fillRect(x,y,P*2,P);
+    ctx.fillStyle='#282828';ctx.fillRect(x+P,0,P,h-P);
+    // drip
+    ctx.fillStyle='#2244ff';ctx.fillRect(x+P,h,P,P*Math.floor((bgTick*.05+i)%3));
+  });
+}
+function drawVines(ctx,W,H,skyH,P){
+  [.04,.18,.33,.55,.72,.88].forEach((rx,i)=>{
+    const x=Math.round(rx*W/P)*P;
+    ctx.fillStyle=i%2===0?'#1a5a10':'#2a7a1a';
+    for(let y=0;y<skyH;y+=P*2)ctx.fillRect(x,y,P,P*2);
+    [.25,.5,.75].forEach(lt=>{
+      const ly=Math.round(lt*skyH/P)*P;
+      ctx.fillStyle='#3a8a20';ctx.fillRect(x-P*2,ly,P*4,P);
+    });
+  });
+}
+function drawTrees(ctx,W,skyH,P,style){
+  const trunkC=style==='swamp'?'#2a1a0a':'#1a3010';
+  const leafC=style==='swamp'?'#1a3010':'#2a6018';
+  [[.05,.9],[.15,.7],[.78,.85],[.88,.65],[.95,.75]].forEach(([rx,rh])=>{
+    const x=Math.round(rx*W/P)*P,h=Math.round(rh*skyH*.5/P)*P;
+    ctx.fillStyle=trunkC;ctx.fillRect(x,skyH-h,P*2,h);
+    ctx.fillStyle=leafC;
+    for(let r=-4;r<=4;r++)for(let c=-4;c<=4;c++)
+      if(r*r+c*c<=16)ctx.fillRect(x+(c-1)*P,skyH-h-P*5+r*P,P*2,P);
+  });
+}
+function drawLava(ctx,W,H,skyH,P){
+  const ly=skyH+P*3;
+  for(let x=0;x<W;x+=P){
+    const w=Math.sin(x*.08+bgTick*.12)*P;
+    ctx.fillStyle='#cc2200';ctx.fillRect(x,ly+w,P,H-ly);
+    ctx.fillStyle='#ff5500';ctx.fillRect(x,ly+w,P,P);
+    if(((x/P)+Math.floor(bgTick*.15))%10===0){ctx.fillStyle='#ffaa00';ctx.fillRect(x,ly+w-P,P,P);}
+  }
+  // ash particles
+  for(let i=0;i<6;i++){
+    const ax=((bgTick*2+i*37)%W);
+    const ay=skyH-((bgTick+i*20)%(skyH));
+    ctx.fillStyle='#884422';ctx.fillRect(Math.round(ax/P)*P,Math.round(ay/P)*P,P,P);
+  }
+}
+function drawWater(ctx,W,H,skyH,P){
+  const wy=skyH+P*2;
+  for(let x=0;x<W;x+=P){
+    const w=Math.sin(x*.12+bgTick*.07)*P;
+    ctx.fillStyle='#063880';ctx.fillRect(x,wy+w,P,H-wy);
+    ctx.fillStyle='#0a58b0';ctx.fillRect(x,wy+w,P,P);
+    if(((x/P)+Math.floor(bgTick*.08))%7===0){ctx.fillStyle='#4488bb';ctx.fillRect(x,wy+w-P,P,P);}
+  }
+}
+function drawSnow(ctx,W,skyH,P){
+  // Snowflakes
+  for(let i=0;i<12;i++){
+    const sx=Math.round(((bgTick*1.5+i*53)%W)/P)*P;
+    const sy=Math.round(((bgTick+i*17)%(skyH))/P)*P;
+    ctx.fillStyle='#ffffff';ctx.fillRect(sx,sy,P,P);
+  }
+  // Snow drifts on ground
+  for(let x=0;x<W;x+=P*2){
+    const sh=P*(1+Math.floor(Math.sin(x*.05)*2+2));
+    ctx.fillStyle='#ddeeff';ctx.fillRect(x,skyH-sh,P*2,sh+P);
+  }
+  // Snowflake sparkles
+  [[.1,.3],[.3,.1],[.6,.2],[.8,.4],[.9,.15]].forEach(([rx,ry])=>{
+    ctx.fillStyle='#aaccee';
+    ctx.fillRect(Math.round(rx*W/P)*P,Math.round(ry*skyH/P)*P,P,P);
+  });
+}
+function drawSand(ctx,W,skyH,P){
+  // Sand ripples
+  for(let y=skyH;y<skyH+P*4;y+=P){
+    for(let x=0;x<W;x+=P*3){
+      const shift=Math.floor(Math.sin(x*.08+bgTick*.03)*P);
+      ctx.fillStyle='#b87830';ctx.fillRect(x,y+shift,P*2,P);
+    }
+  }
+  // Cacti
+  [[.08,.6],[.7,.75],[.9,.5]].forEach(([rx,rh])=>{
+    const x=Math.round(rx*W/P)*P,h=Math.round(rh*skyH*.4/P)*P;
+    ctx.fillStyle='#2a6610';ctx.fillRect(x,skyH-h,P*2,h);
+    ctx.fillRect(x-P*2,skyH-Math.round(h*.6),P*2,P*3);
+    ctx.fillRect(x+P*2,skyH-Math.round(h*.7),P*2,P*3);
+  });
+  // Sun/heat shimmer
+  const sunX=Math.round(W*.75/P)*P;
+  ctx.fillStyle='#ffcc20';
+  for(let r=-3;r<=3;r++)for(let c=-3;c<=3;c++)if(r*r+c*c<=8){ctx.fillRect(sunX+c*P,20+r*P,P,P);}
+}
+function drawFog(ctx,W,skyH,P){
+  // Green swamp fog wisps
+  const fogAlpha=0.45;
+  for(let i=0;i<8;i++){
+    const fx=Math.round(((bgTick*.5+i*80)%W)/P)*P;
+    const fy=Math.round((skyH*.5+i*8)/P)*P;
+    const fw=P*(6+i%5);
+    ctx.fillStyle=`rgba(80,160,60,${fogAlpha})`;
+    ctx.fillRect(fx,fy,fw,P*2);
+  }
+  // Bog bubbles
+  for(let i=0;i<5;i++){
+    const bx=Math.round(((i*110+bgTick)%W)/P)*P;
+    ctx.fillStyle='rgba(40,120,30,0.6)';
+    ctx.fillRect(bx,skyH-P*2,P*2,P*2);
+  }
+}
+
+function startBgLoop(){
+  if(bgRaf)cancelAnimationFrame(bgRaf);
+  const tick=()=>{bgTick++;drawBg();bgRaf=requestAnimationFrame(tick);};
+  bgRaf=requestAnimationFrame(tick);
+}
+
+// ══════════════════════════════════════════════════════════
+//  SPRITE POSITIONING
+// ══════════════════════════════════════════════════════════
+function positionSprites(){
+  const area=document.getElementById('battle-area');
+  const W=area.clientWidth, H=area.clientHeight;
+  const eC=document.getElementById('enemy-canvas');
+  const pC=document.getElementById('player-canvas');
+  const D=96;
+  eC.style.cssText=`width:${D}px;height:${D}px;top:${Math.floor(H*.28)}px;right:${Math.floor(W*.09)}px;left:auto;bottom:auto;`;
+  pC.style.cssText=`width:${D}px;height:${D}px;bottom:${Math.floor(H*.18)}px;left:${Math.floor(W*.06)}px;top:auto;right:auto;`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  GAME DATA
+// ══════════════════════════════════════════════════════════
+const ZONES=[
+  {id:'trig_id',       name:'Trig Temple',       icon:'🔺',topic:'Trig Identities',         req:0,  dinos:['carnotaurus','allosaurus']},
+  {id:'limits',        name:'Limit Lagoon',       icon:'🌀',topic:'Limits',                  req:1,  dinos:['mosasaurus','iguanodon']},
+  {id:'diff_quot',     name:'Quotient Quarry',    icon:'📐',topic:'Difference Quotient',     req:2,  dinos:['gallimimus','oviraptor']},
+  {id:'tangent',       name:'Tangent Tundra',     icon:'📏',topic:'Tangent & Normal Lines',  req:3,  dinos:['yutyrannus','carcharodontosaurus']},
+  {id:'deriv_power',   name:'Power Plains',       icon:'⚡',topic:'Derivative Power Rule',   req:4,  dinos:['velociraptor','ankylosaurus']},
+  {id:'deriv_product', name:'Product Peaks',      icon:'✖', topic:'Derivative Product Rule', req:5,  dinos:['pachycephalosaurus','parasaurolophus']},
+  {id:'quot_rule',     name:'Quotient Gorge',     icon:'➗',topic:'Derivative Quotient Rule', req:6,  dinos:['stegosaurus','diplodocus']},
+  {id:'chain_rule',    name:'Chain Caverns',      icon:'⛓',topic:'Derivative Chain Rule',    req:7,  dinos:['spinosaurus','kentrosaurus']},
+  {id:'app_deriv',     name:'Apps Arena',         icon:'🏆',topic:'Application of Derivs',   req:8,  dinos:['tyrannosaurus','giganotosaurus']},
+  {id:'inv_deriv',     name:'Inverse Valley',     icon:'↩', topic:'Derivative Inverses',     req:9,  dinos:['therizinosaurus','brachiosaurus']},
+  {id:'deriv_graph',   name:'Graph Gorge',        icon:'📈',topic:'Derivative Graphing',     req:10, dinos:['pterodactyl','triceratops']},
+  {id:'integrals',     name:'Integral Isles',     icon:'∫', topic:'Integrals',               req:11, dinos:['stegosaurus','ankylosaurus']},
+];
+const DINOS={
+  stegosaurus:{name:'Stegosaurus',type:'Integral',hp:60,atk:12},
+  triceratops:{name:'Triceratops',type:'Integral',hp:75,atk:10},
+  velociraptor:{name:'Velociraptor',type:'Power',hp:50,atk:18},
+  ankylosaurus:{name:'Ankylosaurus',type:'Power',hp:90,atk:8},
+  pterodactyl:{name:'Pterodactyl',type:'Graphing',hp:45,atk:20},
+  brachiosaurus:{name:'Brachiosaurus',type:'Graphing',hp:100,atk:7},
+  spinosaurus:{name:'Spinosaurus',type:'Chain',hp:80,atk:15},
+  diplodocus:{name:'Diplodocus',type:'Chain',hp:85,atk:9},
+  pachycephalosaurus:{name:'Pachycephalosaurus',type:'Quotient',hp:65,atk:16},
+  parasaurolophus:{name:'Parasaurolophus',type:'Quotient',hp:70,atk:12},
+  mosasaurus:{name:'Mosasaurus',type:'Limits',hp:95,atk:14},
+  iguanodon:{name:'Iguanodon',type:'Limits',hp:60,atk:13},
+  carnotaurus:{name:'Carnotaurus',type:'Trig',hp:70,atk:18},
+  allosaurus:{name:'Allosaurus',type:'Trig',hp:75,atk:16},
+  kentrosaurus:{name:'Kentrosaurus',type:'Inverse',hp:65,atk:14},
+  therizinosaurus:{name:'Therizinosaurus',type:'Inverse',hp:80,atk:12},
+  yutyrannus:{name:'Yutyrannus',type:'Tangent',hp:75,atk:17},
+  carcharodontosaurus:{name:'Carcharodontosaurus',type:'Tangent',hp:85,atk:18},
+  gallimimus:{name:'Gallimimus',type:'DiffQuot',hp:55,atk:19},
+  oviraptor:{name:'Oviraptor',type:'DiffQuot',hp:50,atk:20},
+  tyrannosaurus:{name:'T-Rex',type:'Applications',hp:120,atk:22},
+  giganotosaurus:{name:'Giganotosaurus',type:'Applications',hp:110,atk:24},
+};
+
+const QUESTIONS={
+  trig_id:[
+    {q:"Simplify sec(x)+sec(x)tan²(x)",hint:"Factor sec(x), use 1+tan²=sec²",ans:['sec²(x)','tan³(x)','sec³(x)','sec(x)+1'],c:2,d:2},
+    {q:"Simplify 1/(sin(x)+sin(x)cot²(x))",hint:"Factor sin(x), use 1+cot²=csc²",ans:['csc(x)','cos(x)','sin(x)','tan(x)'],c:2,d:2},
+    {q:"sin²(x)/tan²(x) = ?",hint:"Write tan=sin/cos then simplify",ans:['sin²(x)','1-sin²(x)','cos²(x)','sec²(x)'],c:2,d:3},
+  ],
+  limits:[
+    {q:"lim(x→4) (√x−2)/(x−4) = ?",hint:"Multiply top & bottom by (√x+2)",ans:['1/2','1/4','0','undefined'],c:1,d:3},
+    {q:"lim(x→-14) (√(x+18)−2)/(x+14) = ?",hint:"Conjugate: multiply by (√(x+18)+2)",ans:['1/2','0','1/4','undefined'],c:2,d:4},
+    {q:"lim(x→3) (x³-27)/(x-3) = ?",hint:"Factor: difference of cubes",ans:['0','9','27','undefined'],c:2,d:3},
+    {q:"lim(x→-1) (x²+3x+2)/(x+1) = ?",hint:"Factor numerator: (x+1)(x+2)",ans:['0','1','-1','2'],c:1,d:3},
+  ],
+  diff_quot:[
+    {q:"f(x)=3x² — find f′(x) using DQ",hint:"Expand 3(x+h)², subtract 3x², divide h, let h→0",ans:['3x','6x','6x²','3x+h'],c:1,d:2},
+    {q:"f(x)=6x+3 — find f′(x) using DQ",hint:"[6(x+h)+3-(6x+3)]/h simplifies easily",ans:['6x','3','6','6x+3'],c:2,d:2},
+    {q:"f(x)=2x²+3 — find f′(x) using DQ",hint:"Expand 2(x+h)²+3, cancel constants, factor h",ans:['2x','4x','4x+3','4x²'],c:1,d:2},
+  ],
+  tangent:[
+    {q:"y=x² at x=3, tangent line = ?",hint:"Point (3,9), slope f′(3)=6, use point-slope",ans:['y=3x-9','y=6x+9','y=6x-9','y=2x-9'],c:2,d:2},
+    {q:"g(x)=x³-2x at x=2, slope = ?",hint:"g′(x)=3x²-2, plug in x=2",ans:['6','8','10','12'],c:2,d:2},
+    {q:"y=√x at x=9, tangent slope = ?",hint:"Derivative = 1/(2√x), plug in x=9",ans:['1/3','1/6','1/9','3'],c:1,d:3},
+  ],
+  deriv_power:[
+    {q:"d/dx[√(6x+1)] = ?",hint:"Rewrite: (6x+1)^(1/2). Chain rule.",ans:['6/√(6x+1)','1/(2√(6x+1))','3/√(6x+1)','√6·(6x+1)'],c:2,d:3},
+    {q:"d/dx[-3√(6x+1)] = ?",hint:"-3 × (1/2)(6x+1)^(-1/2) × 6",ans:['-3/√(6x+1)','-9/√(6x+1)','9/√(6x+1)','-18/√(6x+1)'],c:1,d:3},
+    {q:"d/dx[(6x+1)³] = ?",hint:"Power then chain: 3(6x+1)² × 6",ans:['3(6x+1)²','6(6x+1)²','18(6x+1)²','18(6x)²'],c:2,d:3},
+    {q:"d/dx[4√x+x] = ?",hint:"4·(1/2)x^(-1/2)+1",ans:['2/√x','1/(2√x)+1','2/√x+1','4/√x+1'],c:2,d:2},
+  ],
+  deriv_product:[
+    {q:"d/dx[(6x²+7)(8x-7)] = ?",hint:"Product rule: u′v+uv′, u=6x²+7, v=8x-7",ans:['12x(8x-7)+8(6x²+7)','(12x)(8)','48x²-42x','(6x²)(8x)+(7)(-7)'],c:0,d:2},
+    {q:"f(x)=x^(3/2)(x²+1), f′(x) = ?",hint:"u=x^(3/2), u′=(3/2)x^(1/2); v=x²+1, v′=2x",ans:['(3/2)√x(x²+1)+2x√x³','(3/2)x^(1/2)+2x','2x√x+x²','(3/2)√x+2x'],c:0,d:3},
+    {q:"d/dx[(2/x²+4)(x⁵+2x²)] = ?",hint:"u=2x^(-2)+4, u′=-4x^(-3), product rule",ans:['-4/x³(x⁵+2x²)+(2/x²+4)(5x⁴+4x)','(2/x²)(5x⁴)','10x³+8x','-4/x³(5x⁴)'],c:0,d:3},
+  ],
+  quot_rule:[
+    {q:"d/dx[3x²/(x+5)] = ?",hint:"f=3x², f′=6x, g=x+5, g′=1. (f′g-fg′)/g²",ans:['6x/(x+5)','(3x²+30x)/(x+5)²','3x/(x+5)²','6x(x+5)'],c:1,d:2},
+    {q:"d/dx[sin(x)/x²] = ?",hint:"f=sin(x), f′=cos(x), g=x², g′=2x",ans:['cos(x)/2x','(x²cos(x)+2sin(x))/x⁴','(xcos(x)-2sin(x))/x³','sin(x)/2x'],c:2,d:3},
+    {q:"d/dx[(2x-1)/(x²+4)] = ?",hint:"f=2x-1, f′=2, g=x²+4, g′=2x",ans:['2/(x²+4)','(2x²-2x-8)/(x²+4)²','(-2x²+2x+8)/(x²+4)²','2/2x'],c:2,d:3},
+  ],
+  chain_rule:[
+    {q:"d/dx[(2x²+3)⁴] = ?",hint:"Outer: 4u³, inner: 4x. Multiply.",ans:['4(2x²+3)³','8x(2x²+3)³','16x(2x²+3)³','4(2x+3)³'],c:2,d:2},
+    {q:"d/dx[√(6x⁴-x³)] = ?",hint:"Outer: 1/(2√u), inner: 24x³-3x²",ans:['(24x³-3x²)/√(6x⁴-x³)','√(24x³-3x²)','(24x³-3x²)/(2√(6x⁴-x³))','1/√(6x⁴-x³)'],c:2,d:3},
+    {q:"d/dx[-cos(e^(4x))] = ?",hint:"sin(u) × u′ where u=e^(4x), u′=4e^(4x)",ans:['sin(e^(4x))','4sin(e^(4x))','4e^(4x)cos(e^(4x))','4e^(4x)sin(e^(4x))'],c:3,d:3},
+  ],
+  app_deriv:[
+    {q:"s(t)=6t³+7t²-21, v(t)=?",hint:"Velocity = first derivative of position",ans:['18t+14','18t²+14t','6t³+7t','36t+14'],c:1,d:2},
+    {q:"s(t)=6t³+7t²-21, a(t)=?",hint:"Acceleration = derivative of velocity",ans:['36t+14','18t²+14t','36t+7','36t'],c:0,d:2},
+    {q:"s(t)=4t³+2t²-6t, a(3)=?",hint:"v=12t²+4t-6, a=24t+4, plug t=3",ans:['72','74','76','78'],c:2,d:3},
+  ],
+  inv_deriv:[
+    {q:"f(x)=x³+6, find (f⁻¹)′(x)",hint:"f-inv(x)=(x-6)^(1/3). Differentiate.",ans:['1/(3x²)','3(x-6)^(2/3)','1/(3(x-6)^(2/3))','(x-6)^(1/3)/3'],c:2,d:3},
+    {q:"f(x)=1/(x-2), (f⁻¹)′(x)=?",hint:"f-inv(x)=1/x+2. Differentiate.",ans:['1/x²','-1/x²','1/(x-2)²','-1/(x-2)²'],c:1,d:3},
+    {q:"f(x)=√(x+3), (f⁻¹)′(x)=?",hint:"f-inv(x)=x²-3. Differentiate.",ans:['1/(2√(x+3))','1/(2x)','2x','x²'],c:2,d:2},
+  ],
+  deriv_graph:[
+    {q:"f(x)=x²-2x, f′(x)=?",hint:"Power rule each term",ans:['2x','2x-2','x-2','2x+2'],c:1,d:1},
+  ],
+  integrals:[
+    {q:"∫(6x⁴+2x-5)dx = ?",hint:"Add 1 to each exponent, divide by new exponent",ans:['6x⁵+x²-5x+C','(6x⁵/5)+x²+5x+C','(6x⁵/5)+x²-5x+C','6x⁴+2'],c:2,d:2},
+    {q:"∫ from 2 to 3 of (8x³+3x²+6x)dx = ?",hint:"Antiderivative: 2x⁴+x³+3x². Eval at 3 minus 2.",ans:['150','164','172','180'],c:1,d:3},
+    {q:"∫ from -1 to 2 of (3x²-2x+1)dx = ?",hint:"Antiderivative: x³-x²+x. Plug in bounds.",ans:['6','8','9','12'],c:2,d:3},
+  ],
+};
+
+// TUTORIAL QUESTIONS — 8 easy warm-ups, mixed topics
+const TUT_QS=[
+  {q:'d/dx [x²] = ?',hint:'Power rule: multiply by exponent, decrease by 1',ans:['x','2x','2x²','x²'],c:1,topic:'Power Rule',
+   explain:'The power rule says d/dx[xⁿ] = nxⁿ⁻¹. For x², n=2, so we get 2x¹ = 2x!'},
+  {q:'∫ 1 dx = ?',hint:'The integral of a constant k is kx+C',ans:['1','0','x+C','x²+C'],c:2,topic:'Integrals',
+   explain:'Integrating a constant 1 gives x+C. Don\'t forget the +C!'},
+  {q:'sin²(x)+cos²(x) = ?',hint:'This is THE most important trig identity!',ans:['0','2','sin(x)','1'],c:3,topic:'Trig Identity',
+   explain:'sin²(x)+cos²(x)=1 always! This Pythagorean identity is used constantly in calculus.'},
+  {q:"f'(x)>0 means f(x) is…?",hint:'Think: positive slope means going…?',ans:['Constant','Decreasing','Increasing','Undefined'],c:2,topic:'Graphing',
+   explain:'When the derivative is positive, the function is climbing — increasing! Negative means decreasing.'},
+  {q:'lim(x→3) [x+2] = ?',hint:'Just plug in x=3 (function is continuous)',ans:['2','3','4','5'],c:3,topic:'Limits',
+   explain:'For continuous functions, just substitute! lim(x→3)[x+2] = 3+2 = 5.'},
+  {q:'d/dx [eˣ] = ?',hint:'This function is its own derivative — magic!',ans:['xeˣ⁻¹','eˣ⁺¹','eˣ','0'],c:2,topic:'Inverse Deriv.',
+   explain:'eˣ is the only function that equals its own derivative! d/dx[eˣ] = eˣ.'},
+  {q:'The Difference Quotient = ?',hint:'It\'s the definition of the derivative!',ans:['f(x)/h','[f(x+h)-f(x)]/h','f\'(x)·h','f(x+h)'],c:1,topic:'Diff. Quotient',
+   explain:'[f(x+h)-f(x)]/h is the slope formula. As h→0, this becomes the derivative!'},
+  {q:'To find max/min, set ____ = 0',hint:'What tells you where a function flattens out?',ans:['f(x)','f\'\'(x)','f\'(x)','x'],c:2,topic:'Applications',
+   explain:'Set the derivative f\'(x)=0 to find critical points — these are potential maxima or minima!'},
+];
+
+// Prof messages per question
+const TUT_NARR=[
+  "Let's start easy — derivatives!",
+  "Great! Now let's try integrals.",
+  "Trigonometry time — this one's legendary!",
+  "Can you read a graph? Let's find out!",
+  "Limits! Just substitute for now.",
+  "Meet eˣ — the coolest function in math!",
+  "Now for the foundation of derivatives...",
+  "Last one! Optimization — super useful!",
+];
+
+// ══════════════════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════════════════
+let G={level:1,xp:0,xpMax:100,coins:0,potions:3,zone:'trig_id',
+  caught:[],party:['stegosaurus'],partyIdx:0,battle:null,qActive:false,
+  capturing:false,captureStreak:0,curQ:null};
+let EB={hp:0,maxHp:0,atk:0,key:''};
+let PB={hp:0,maxHp:0,atk:0,key:''};
+
+// Tutorial state
+let TUT={phase:'intro',qIdx:0,correct:0,answered:false};
+
+// ══════════════════════════════════════════════════════════
+//  TUTORIAL
+// ══════════════════════════════════════════════════════════
+function showTutorial(){
+  document.getElementById('tutorial-overlay').style.display='flex';
+  // Render preview sprites
+  drawDino(document.getElementById('tut-enemy-preview'),'tyrannosaurus',false,6);
+  drawDino(document.getElementById('tut-player-preview'),'stegosaurus',true,6);
+  // All avatars = Prof Stego
+  ['tut-av0','tut-av1','tut-av-q','tut-av-done'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)drawDino(el,'stegosaurus',false,3);
+  });
+  buildTutDots();tutGoStep('intro');playMusic('tutorial');
+}
+
+function buildTutDots(){
+  const el=document.getElementById('tut-progress');
+  el.innerHTML='';
+  const total=TUT_QS.length;
+  for(let i=0;i<total;i++){
+    const d=document.createElement('div');
+    d.className='tut-dot'+(i<TUT.qIdx?'  done':i===TUT.qIdx&&TUT.phase==='q'?' current':'');
+    el.appendChild(d);
+  }
+}
+
+function tutGoStep(step){
+  TUT.phase=step;
+  ['tut-s0','tut-s1','tut-s-q','tut-s-done'].forEach(id=>{
+    document.getElementById(id).classList.remove('active');
+  });
+  if(step==='intro')      document.getElementById('tut-s0').classList.add('active');
+  else if(step===1)       document.getElementById('tut-s1').classList.add('active');
+  else if(step==='q')     {document.getElementById('tut-s-q').classList.add('active');loadTutQ();}
+  else if(step==='done')  {document.getElementById('tut-s-done').classList.add('active');showTutDone();}
+  buildTutDots();
+}
+
+function loadTutQ(){
+  if(TUT.qIdx>=TUT_QS.length){tutGoStep('done');return;}
+  const q=TUT_QS[TUT.qIdx];
+  document.getElementById('tut-topic-badge').textContent=q.topic;
+  document.getElementById('tut-counter').textContent=(TUT.qIdx+1)+'/'+TUT_QS.length;
+  document.getElementById('tut-q-text').textContent=q.q;
+  document.getElementById('tut-hint').textContent='💡 '+q.hint;
+  document.getElementById('tut-feedback').textContent='';
+  document.getElementById('tut-q-intro').innerHTML=`<b>Prof. Stego:</b> ${TUT_NARR[TUT.qIdx]||'Answer this!'}`;
+  const grid=document.getElementById('tut-ans-grid');
+  grid.innerHTML='';
+  TUT.answered=false;
+  q.ans.forEach((a,i)=>{
+    const b=document.createElement('button');
+    b.className='tut-ans-btn';
+    b.textContent=['A','B','C','D'][i]+')  '+a;
+    b.onclick=()=>handleTutQ(i,b);
+    grid.appendChild(b);
+  });
+  buildTutDots();
+}
+
+function handleTutQ(idx,btn){
+  if(TUT.answered)return;
+  TUT.answered=true;
+  const q=TUT_QS[TUT.qIdx];
+  document.querySelectorAll('.tut-ans-btn').forEach(b=>b.onclick=null);
+  document.querySelectorAll('.tut-ans-btn')[q.c].classList.add('correct');
+  const fb=document.getElementById('tut-feedback');
+  if(idx===q.c){
+    btn.classList.add('correct');sfxCorrect();
+    TUT.correct++;
+    fb.style.color='var(--green)';
+    fb.textContent='✅ '+q.explain;
+  }else{
+    btn.classList.add('wrong');sfxWrong();
+    fb.style.color='var(--red)';
+    fb.textContent='❌ '+q.explain;
+  }
+  TUT.qIdx++;
+  setTimeout(()=>{
+    if(TUT.qIdx>=TUT_QS.length)tutGoStep('done');
+    else loadTutQ();
+  },2000);
+}
+
+function showTutDone(){
+  const pct=Math.round(TUT.correct/TUT_QS.length*100);
+  drawDino(document.getElementById('tut-av-done'),'tyrannosaurus',false,3);
+  let msg, stars='';
+  if(pct===100){msg='PERFECT SCORE! Kenneth is already a calculus LEGEND! +100 bonus XP!';stars='⭐⭐⭐';}
+  else if(pct>=75){msg=`Great job! ${TUT.correct}/${TUT_QS.length} correct! Keep battling to master each topic!`;stars='⭐⭐☆';}
+  else if(pct>=50){msg=`Good effort! ${TUT.correct}/${TUT_QS.length} correct! Each battle sharpens your mind!`;stars='⭐☆☆';}
+  else{msg=`${TUT.correct}/${TUT_QS.length} correct — don't worry! The battles will teach you everything!`;stars='☆☆☆';}
+  document.getElementById('tut-done-msg').innerHTML=`<b>T-Rex Sensei says:</b><br>${msg}`;
+  const row=document.getElementById('tut-score-stars');
+  row.innerHTML=`<span style="font-size:28px;">${stars}</span>`;
+  buildTutDots();
+}
+
+function endTutorial(){
+  document.getElementById('tutorial-overlay').style.display='none';
+  playMusicForBiome(bgStyle);
+  const bonus=TUT.correct===TUT_QS.length?100:TUT.correct*12;
+  gainXP(bonus);
+  setDlg(`Tutorial done! ${TUT.correct}/${TUT_QS.length} correct! +${bonus} XP bonus! Time to battle!`);
+}
+
+// ══════════════════════════════════════════════════════════
+//  GAME START
+// ══════════════════════════════════════════════════════════
+function startGame(){
+  // Draw title sprites
+  drawDino(document.getElementById('title-c1'),'stegosaurus',false,4);
+  drawDino(document.getElementById('title-c2'),'tyrannosaurus',false,4);
+  document.getElementById('title-screen').style.display='none';
+  document.getElementById('game-wrapper').style.display='flex';
+  setTimeout(()=>{
+    positionSprites();drawBg();startBgLoop();
+    updateUI();renderZones();renderDex();renderParty();
+    startBattle('trig_id');
+    showTutorial();
+  },50);
+  window.addEventListener('resize',()=>{positionSprites();drawBg();});
+}
+
+// Draw title screen sprites after DOM loads (for title-screen preview)
+window.addEventListener('DOMContentLoaded',()=>{
+  const c1=document.getElementById('title-c1');
+  const c2=document.getElementById('title-c2');
+  if(c1)drawDino(c1,'stegosaurus',false,4);
+  if(c2)drawDino(c2,'tyrannosaurus',false,4);
+});
+
+// ══════════════════════════════════════════════════════════
+//  BATTLE
+// ══════════════════════════════════════════════════════════
+function startBattle(zoneId){
+  G.zone=zoneId;
+  const zone=ZONES.find(z=>z.id===zoneId);
+  const ek=zone.dinos[Math.floor(Math.random()*zone.dinos.length)];
+  const pk=G.party[G.partyIdx];
+  const sc=1+(G.level-1)*.15;
+  EB={key:ek,hp:Math.floor(DINOS[ek].hp*sc),maxHp:Math.floor(DINOS[ek].hp*sc),atk:Math.floor(DINOS[ek].atk*sc)};
+  PB={key:pk,hp:DINOS[pk].hp+G.level*5,maxHp:DINOS[pk].hp+G.level*5,atk:DINOS[pk].atk+G.level*2};
+  G.battle={zoneId,ek,zone};G.capturing=false;G.qActive=false;
+  // Enemy = FRONT (faces player), Player = BACK (faces away into screen)
+  drawDino(document.getElementById('enemy-canvas'),ek,false,6);
+  drawDino(document.getElementById('player-canvas'),pk,true,6);
+  positionSprites();
+  document.getElementById('enemy-name').textContent=DINOS[ek].name.toUpperCase();
+  document.getElementById('enemy-type').textContent='TYPE: '+DINOS[ek].type;
+  document.getElementById('enemy-caught').style.display=G.caught.includes(ek)?'inline-block':'none';
+  document.getElementById('player-dino-name').textContent=DINOS[pk].name.toUpperCase();
+  document.getElementById('player-dino-type').textContent='TYPE: '+DINOS[pk].type;
+  updateHP();showActions();
+  const f=document.getElementById('encounter-flash');
+  f.style.display='block';setTimeout(()=>f.style.display='none',800);
+  const bossDinos=['tyrannosaurus','giganotosaurus'];
+  if(bossDinos.includes(ek))playMusic('boss');else playMusicForBiome(bgStyle);
+  sfxBattleStart();
+  setDlg(`A wild ${DINOS[ek].name} appeared in ${zone.name}!`);
+}
+
+function updateHP(){
+  const ep=Math.max(0,EB.hp/EB.maxHp*100),pp=Math.max(0,PB.hp/PB.maxHp*100);
+  const eb=document.getElementById('enemy-hp-bar');
+  eb.style.width=ep+'%';eb.style.background=ep>50?'var(--hp-good)':ep>25?'var(--hp-mid)':'var(--hp-low)';
+  const pb=document.getElementById('player-hp-bar');
+  pb.style.width=pp+'%';pb.style.background=pp>50?'var(--hp-good)':pp>25?'var(--hp-mid)':'var(--hp-low)';
+  document.getElementById('enemy-hp-num').textContent=`${Math.max(0,EB.hp)}/${EB.maxHp}`;
+  document.getElementById('player-hp-num').textContent=`${Math.max(0,PB.hp)}/${PB.maxHp}`;
+}
+
+function actionFight(){if(G.qActive)return;G.capturing=false;sfxFight();showQ();}
+function actionCapture(){
+  if(G.qActive)return;
+  if(G.caught.includes(G.battle.ek)){setDlg('Already in your Dex! Fight or Run.');return;}
+  if(!G.capturing){G.captureStreak=0;}
+  G.capturing=true;
+  setDlg(`CAPTURE MODE! ${G.captureStreak}/3 — Answer correctly!`);showQ();
+}
+function actionHeal(){
+  if(G.potions<=0){sfxClick();setDlg('No Calc Potions left!');return;}
+  G.potions--;const h=Math.floor(PB.maxHp*.4);
+  PB.hp=Math.min(PB.maxHp,PB.hp+h);updateHP();sfxHeal();
+  setDlg(`Used Calc Potion! +${h} HP! (${G.potions} left)`);
+  document.getElementById('heal-desc').textContent=`Potions: ${G.potions}`;
+}
+function actionRun(){sfxRun();setDlg('Kenneth fled to the map!');showTab('map');}
+
+function showQ(){
+  G.qActive=true;
+  const pool=QUESTIONS[G.zone]||QUESTIONS.integrals;
+  const q=pool[Math.floor(Math.random()*pool.length)];
+  G.curQ=q;
+  document.getElementById('q-topic').textContent=G.battle.zone.topic.toUpperCase();
+  document.getElementById('q-stars').textContent='★'.repeat(q.d)+'☆'.repeat(3-q.d);
+  document.getElementById('question-text').textContent=q.q;
+  document.getElementById('q-hint').textContent='💡 '+q.hint;
+  const grid=document.getElementById('answer-grid');
+  grid.innerHTML='';
+  q.ans.forEach((a,i)=>{
+    const b=document.createElement('button');b.className='answer-btn';
+    b.textContent=['A','B','C','D'][i]+')  '+a;
+    b.onclick=()=>handleQ(i,b);grid.appendChild(b);
+  });
+  document.getElementById('question-panel').style.display='flex';
+  document.getElementById('action-menu').style.display='none';
+  document.getElementById('arrow-blink').style.display='none';
+  setDlg(G.capturing?`Capture: ${G.captureStreak}/3 — Answer correctly!`:'Pick the right answer to attack!');
+}
+
+function handleQ(idx,btn){
+  const q=G.curQ;
+  const all=document.querySelectorAll('.answer-btn');
+  all.forEach(b=>b.onclick=null);
+  if(idx===q.c){
+    btn.classList.add('correct');sfxCorrect();
+    if(G.capturing){
+      G.captureStreak++;
+      if(G.captureStreak>=3)setTimeout(catchDino,800);
+      else setTimeout(()=>{document.getElementById('question-panel').style.display='none';showActions();G.qActive=false;setDlg(`Correct! ${G.captureStreak}/3 — Keep going!`);},800);
+    }else setTimeout(doPlayerAtk,600);
+  }else{
+    btn.classList.add('wrong');all[q.c].classList.add('correct');sfxWrong();
+    if(G.capturing){G.captureStreak=0;setTimeout(()=>{document.getElementById('question-panel').style.display='none';showActions();G.qActive=false;setDlg('Wrong! Streak reset. Answer: '+q.ans[q.c]);},1300);}
+    else setTimeout(()=>doEnemyAtk(true),900);
+  }
+}
+
+function flashCanvas(id,type){
+  const c=document.getElementById(id);
+  if(type==='move'){const d=id==='player-canvas'?'55px':'-55px';c.style.transform=`translateX(${d})`;setTimeout(()=>c.style.transform='',300);}
+  else if(type==='hit'){c.style.filter='brightness(4) saturate(0.15)';setTimeout(()=>c.style.filter='',350);}
+}
+function doPlayerAtk(){
+  document.getElementById('question-panel').style.display='none';G.qActive=false;
+  const dmg=PB.atk+Math.floor(Math.random()*8);EB.hp-=dmg;
+  flashCanvas('player-canvas','move');
+  setTimeout(()=>{flashCanvas('enemy-canvas','hit');dmgPop(dmg,false);updateHP();},300);
+  gainXP(15+G.curQ.d*5);
+  setTimeout(()=>{if(EB.hp<=0)defeatEnemy();else setTimeout(()=>doEnemyAtk(false),400);},700);
+}
+function doEnemyAtk(fromWrong){
+  const dmg=Math.floor(EB.atk*(fromWrong?1.2:.8)+Math.random()*5);PB.hp-=dmg;
+  flashCanvas('enemy-canvas','move');
+  setTimeout(()=>{flashCanvas('player-canvas','hit');dmgPop(dmg,true);updateHP();sfxDamage();},300);
+  setTimeout(()=>{
+    if(PB.hp<=0)playerFaint();
+    else{setDlg(fromWrong?`Wrong! ${DINOS[G.battle.ek].name} struck for ${dmg}!`:`${DINOS[G.battle.ek].name} hit for ${dmg}!`);showActions();}
+  },800);
+}
+function defeatEnemy(){
+  const coins=20+G.level*5;G.coins+=coins;gainXP(50+G.level*10);
+  if(G.potions<5)G.potions++;updateUI();
+  sfxVictory();setDlg(`Defeated ${DINOS[G.battle.ek].name}! +${coins}🪙!`);
+  setTimeout(()=>startBattle(G.zone),2500);
+}
+function playerFaint(){
+  sfxDamage();setDlg(`${DINOS[G.party[G.partyIdx]].name} fainted! Reviving at half HP...`);
+  setTimeout(()=>{PB.hp=Math.floor(PB.maxHp*.5);updateHP();showActions();setDlg('Back in the fight!');},2000);
+}
+function catchDino(){
+  const k=G.battle.ek;
+  if(!G.caught.includes(k)){G.caught.push(k);if(G.party.length<6)G.party.push(k);}
+  document.getElementById('question-panel').style.display='none';
+  G.qActive=false;G.capturing=false;gainXP(80);updateUI();renderDex();renderParty();
+  sfxCatch();setDlg(`🥚 ${DINOS[k].name} CAUGHT! Added to party & Dex!`);
+  document.getElementById('enemy-caught').style.display='inline-block';
+  showActions();setTimeout(()=>startBattle(G.zone),3000);
+}
+function showActions(){
+  document.getElementById('action-menu').style.display='grid';
+  document.getElementById('question-panel').style.display='none';
+  document.getElementById('arrow-blink').style.display='block';
+}
+function dmgPop(dmg,isP){
+  const area=document.getElementById('battle-area');
+  const pop=document.createElement('div');pop.className='damage-popup';pop.textContent='-'+dmg;
+  pop.style.color=isP?'#ef4444':'#facc15';pop.style.left=isP?'70px':'340px';pop.style.top=isP?'140px':'45px';
+  area.appendChild(pop);setTimeout(()=>pop.remove(),1200);
+}
+function setDlg(t){document.getElementById('dialogue-text').textContent=t;}
+function gainXP(n){
+  G.xp+=n;
+  while(G.xp>=G.xpMax){G.xp-=G.xpMax;G.level++;G.xpMax=Math.floor(G.xpMax*1.3);G.potions=Math.min(G.potions+2,9);showLevelUp();}
+  updateUI();renderZones();
+}
+function showLevelUp(){sfxLevelUp();
+  document.getElementById('levelup-overlay').style.display='flex';
+  document.getElementById('levelup-detail').textContent=`Kenneth reached Level ${G.level}!\n+2 Calc Potions!\nNew zones may unlock!`;
+}
+function closeLevelUp(){document.getElementById('levelup-overlay').style.display='none';}
+function updateUI(){
+  document.getElementById('player-level').textContent=G.level;
+  document.getElementById('xp-bar').style.width=(G.xp/G.xpMax*100)+'%';
+  document.getElementById('xp-label').textContent=G.xp+'/'+G.xpMax;
+  document.getElementById('coins-display').textContent='🪙 '+G.coins;
+}
+function showTab(t){
+  ['battle','map','dex'].forEach(id=>{
+    document.getElementById('tab-'+id).style.display=id===t?(id==='battle'?'flex':'block'):'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach((b,i)=>b.classList.toggle('active',['battle','map','dex'][i]===t));
+  if(t==='map')renderZones();if(t==='dex')renderDex();
+}
+function renderZones(){
+  const g=document.getElementById('zones-grid');g.innerHTML='';
+  ZONES.forEach(z=>{
+    const u=G.level>z.req,cur=z.id===G.zone;
+    const d=document.createElement('div');
+    d.className='zone-card'+(u?'':' locked')+(cur?' current':'');
+    d.innerHTML=`<div class="zone-icon">${z.icon}</div><div class="zone-name">${z.name}</div><div class="zone-topic">${z.topic}</div><div class="zone-progress">${u?(cur?'◀ HERE':'UNLOCKED'):'LV '+(z.req+1)+' NEEDED'}</div>`;
+    if(u)d.onclick=()=>{showTab('battle');startBattle(z.id);};
+    g.appendChild(d);
+  });
+}
+function renderDex(){
+  const g=document.getElementById('dex-grid');g.innerHTML='';
+  document.getElementById('dex-count').textContent=G.caught.length;
+  // cycle through vivid silhouette hues for unseen dinos
+  const SILS=['#00e5ff','#ff00e5','#aaff00','#ff6600','#ff0066','#00ff99',
+               '#ffcc00','#8800ff','#00ccff','#ff3300','#33ff00','#ff0099'];
+  let si=0;
+  Object.entries(DINOS).forEach(([k,d])=>{
+    const seen=G.caught.includes(k);
+    const card=document.createElement('div');card.className='dex-card'+(seen?'':' unseen');
+    const cv=document.createElement('canvas');
+    cv.style.cssText='image-rendering:pixelated;width:48px;height:48px;';
+    drawDino(cv,k,false,3);
+    if(!seen){
+      const ctx2=cv.getContext('2d');
+      ctx2.globalCompositeOperation='source-atop';
+      ctx2.fillStyle=SILS[si%SILS.length];
+      ctx2.fillRect(0,0,cv.width,cv.height);
+      ctx2.globalCompositeOperation='source-over';
+      si++;
+    }
+    card.appendChild(cv);
+    card.innerHTML+=`<div class="dex-name">${seen?d.name.toUpperCase():'???'}</div><div class="dex-type">${seen?d.type:'???'}</div>`;
+    g.appendChild(card);
+  });
+}
+function renderParty(){
+  const s=document.getElementById('party-slots');s.innerHTML='';
+  G.party.forEach((k,i)=>{
+    const slot=document.createElement('div');slot.className='party-slot'+(i===G.partyIdx?' active-dino':'');
+    slot.title=DINOS[k].name;
+    const c=document.createElement('canvas');
+    drawDino(c,k,i===G.partyIdx,2);c.style.cssText='image-rendering:pixelated;';
+    slot.appendChild(c);
+    const bar=document.createElement('div');bar.className='party-slot-hp';slot.appendChild(bar);
+    slot.onclick=()=>{
+      if(G.qActive)return;
+      G.partyIdx=i;renderParty();
+      drawDino(document.getElementById('player-canvas'),k,true,6);
+      document.getElementById('player-dino-name').textContent=DINOS[k].name.toUpperCase();
+      document.getElementById('player-dino-type').textContent='TYPE: '+DINOS[k].type;
+      PB.hp=DINOS[k].hp+G.level*5;PB.maxHp=PB.hp;PB.atk=DINOS[k].atk+G.level*2;PB.key=k;updateHP();
+      setDlg(`Go, ${DINOS[k].name}!`);
+    };
+    s.appendChild(slot);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  8-BIT AUDIO ENGINE
+// ══════════════════════════════════════════════════════════
+let audioCtx=null,schedTimer=null,nextNoteTime=0,stepIdx=0;
+let activeTrack=null,currentTrackKey=null,musicMuted=false,sfxMuted=false;
+
+function getCtx(){
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended')audioCtx.resume();
+  return audioCtx;
+}
+
+// Auto-generate note table octaves 1-6
+const N=(()=>{
+  const t={_:0},names=['C','Cs','D','Ds','E','F','Fs','G','Gs','A','As','B'];
+  for(let o=1;o<=6;o++)names.forEach((n,i)=>{
+    t[n+o]=parseFloat((440*Math.pow(2,((o+1)*12+i-69)/12)).toFixed(2));
+  });
+  return t;
+})();
+
+function playTone(freq,start,dur,type,vol){
+  if(!freq||freq===0)return;
+  const ctx=getCtx(),o=ctx.createOscillator(),g=ctx.createGain();
+  o.connect(g);g.connect(ctx.destination);
+  o.type=type||'square';o.frequency.value=freq;
+  const att=Math.min(0.01,dur*0.1);
+  g.gain.setValueAtTime(0.001,start);
+  g.gain.linearRampToValueAtTime(vol||0.1,start+att);
+  g.gain.setValueAtTime(vol||0.1,start+dur*0.65);
+  g.gain.exponentialRampToValueAtTime(0.001,start+dur*0.95);
+  o.start(start);o.stop(start+dur);
+}
+
+// Music tracks (16-step 16th-note loops)
+const TRACKS={
+  night:   {bpm:95, mtype:'square',   btype:'triangle',mvol:.10,bvol:.06,
+    mel: [N.A4,0,N.G4,N.E4,0,N.A4,0,N.G4, N.C5,N.B4,0,N.A4,N.G4,0,N.E4,0],
+    bass:[N.A2,0,0,0,N.E3,0,0,0, N.F3,0,0,0,N.E3,0,0,0]},
+  cave:    {bpm:78, mtype:'square',   btype:'triangle',mvol:.09,bvol:.06,
+    mel: [N.A4,0,0,N.Gs4,0,0,N.G4,0, 0,N.Fs4,0,0,N.E4,0,0,0],
+    bass:[N.A2,0,0,0,0,0,0,0, N.Ds3,0,0,0,N.E3,0,0,0]},
+  jungle:  {bpm:158,mtype:'square',   btype:'square',  mvol:.11,bvol:.07,
+    mel: [N.C5,N.E5,N.G5,N.E5,N.D5,0,N.C5,0, N.B4,N.D5,N.G5,N.D5,N.E5,0,N.G5,0],
+    bass:[N.C3,0,N.G3,0,N.F3,0,N.G3,0, N.C3,0,N.G3,0,N.A3,0,N.G3,0]},
+  volcano: {bpm:142,mtype:'sawtooth', btype:'square',  mvol:.09,bvol:.08,
+    mel: [N.E5,0,N.Ds5,N.E5,0,N.G5,N.Fs5,0, N.E5,0,N.D5,0,N.B4,0,N.C5,0],
+    bass:[N.E3,0,N.B2,0,N.E3,0,N.B2,0, N.D3,0,N.A2,0,N.B2,0,N.E3,0]},
+  ocean:   {bpm:108,mtype:'triangle', btype:'triangle',mvol:.12,bvol:.07,
+    mel: [N.D5,0,N.F5,N.A5,0,N.D5,0,N.C5, N.B4,0,N.A4,0,N.F4,N.A4,N.C5,0],
+    bass:[N.D3,0,0,0,N.A3,0,0,0, N.G3,0,0,0,N.A3,0,0,0]},
+  tundra:  {bpm:68, mtype:'triangle', btype:'triangle',mvol:.10,bvol:.06,
+    mel: [N.G4,0,0,0,N.E4,0,0,0, N.D4,0,0,0,N.C4,0,N.D4,0],
+    bass:[N.C3,0,0,0,0,0,0,0, N.G3,0,0,0,0,0,0,0]},
+  desert:  {bpm:130,mtype:'square',   btype:'triangle',mvol:.11,bvol:.07,
+    mel: [N.E5,N.F5,0,N.Gs5,0,N.A5,0,N.B5, 0,N.A5,N.Gs5,0,N.F5,N.E5,0,0],
+    bass:[N.E3,0,N.B2,0,N.E3,0,N.B2,0, N.A2,0,N.E3,0,N.B2,0,N.A2,0]},
+  swamp:   {bpm:90, mtype:'square',   btype:'triangle',mvol:.09,bvol:.06,
+    mel: [N.A4,0,N.As4,0,N.A4,0,N.Gs4,0, N.G4,0,N.Fs4,0,N.F4,0,N.E4,0],
+    bass:[N.A2,0,0,0,N.E3,0,0,0, N.Ds3,0,0,0,N.E3,0,0,0]},
+  boss:    {bpm:178,mtype:'sawtooth', btype:'square',  mvol:.12,bvol:.09,
+    mel: [N.E5,N.G5,N.B5,N.G5,N.E5,N.G5,N.B5,0, N.A5,0,N.Gs5,N.G5,N.Fs5,0,N.B5,0],
+    bass:[N.E3,0,N.B2,N.E3,0,N.E3,0,N.E3, N.A2,0,N.A2,0,N.B2,0,N.B2,0]},
+  tutorial:{bpm:120,mtype:'square',   btype:'triangle',mvol:.10,bvol:.06,
+    mel: [N.C5,N.E5,N.G5,N.E5,N.C5,0,N.D5,0, N.E5,N.G5,N.A5,N.G5,N.E5,0,N.C5,0],
+    bass:[N.C3,0,N.G3,0,N.F3,0,N.C3,0, N.G3,0,N.E3,0,N.C3,0,N.G3,0]},
+};
+
+const LOOKAHEAD=0.13,SCHED_INT=60;
+function scheduleTick(){
+  if(!activeTrack){schedTimer=null;return;}
+  const ctx=getCtx(),stepDur=60/activeTrack.bpm/4;
+  while(nextNoteTime<ctx.currentTime+LOOKAHEAD){
+    const si=stepIdx%activeTrack.mel.length,bi=stepIdx%activeTrack.bass.length;
+    playTone(activeTrack.mel[si],nextNoteTime,stepDur*.85,activeTrack.mtype,activeTrack.mvol);
+    playTone(activeTrack.bass[bi],nextNoteTime,stepDur*1.8,activeTrack.btype,activeTrack.bvol);
+    nextNoteTime+=stepDur;stepIdx++;
+  }
+  schedTimer=setTimeout(scheduleTick,SCHED_INT);
+}
+
+function playMusic(key){
+  if(key===currentTrackKey&&schedTimer)return;
+  stopMusic();currentTrackKey=key;
+  if(musicMuted)return;
+  activeTrack=TRACKS[key]||TRACKS.night;
+  const ctx=getCtx();nextNoteTime=ctx.currentTime+0.05;stepIdx=0;scheduleTick();
+}
+
+function stopMusic(){
+  if(schedTimer){clearTimeout(schedTimer);schedTimer=null;}
+  activeTrack=null;
+}
+
+function playMusicForBiome(biome){
+  const bossDinos=['tyrannosaurus','giganotosaurus'];
+  if(G.battle&&bossDinos.includes(G.battle.ek))return;
+  playMusic(biome);
+}
+
+function toggleMusic(){
+  musicMuted=!musicMuted;
+  const btn=document.getElementById('mute-music-btn');
+  btn.textContent=musicMuted?'♪ OFF':'♪ ON';
+  btn.classList.toggle('on',!musicMuted);
+  if(musicMuted)stopMusic();
+  else{const k=currentTrackKey;currentTrackKey=null;if(k)playMusic(k);}
+}
+
+function toggleSFX(){
+  sfxMuted=!sfxMuted;
+  const btn=document.getElementById('mute-sfx-btn');
+  btn.textContent=sfxMuted?'SFX OFF':'SFX';
+  btn.classList.toggle('on',!sfxMuted);
+}
+
+// ── Sound Effects ──────────────────────────────────────────
+function sfxFight(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  playTone(150,t,.04,'sawtooth',.18);
+  playTone(300,t+.04,.05,'square',.17);
+  playTone(600,t+.08,.09,'square',.15);
+}
+function sfxCapture(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  [N.C5,N.E5,N.G5,N.C6].forEach((f,i)=>playTone(f,t+i*.07,.09,'square',.14));
+}
+function sfxHeal(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  [N.G5,N.B5,N.D6].forEach((f,i)=>playTone(f,t+i*.09,.15,'triangle',.13));
+}
+function sfxRun(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  [N.G4,N.E4,N.C4].forEach((f,i)=>playTone(f,t+i*.06,.07,'square',.14));
+}
+function sfxClick(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  playTone(N.A4,t,.05,'square',.10);
+}
+function sfxCorrect(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  [N.C5,N.E5,N.G5].forEach((f,i)=>playTone(f,t+i*.07,.12,'square',.15));
+}
+function sfxWrong(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  [N.B4,N.As4,N.A4].forEach((f,i)=>playTone(f,t+i*.08,.10,'sawtooth',.15));
+}
+function sfxLevelUp(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  [N.C5,N.E5,N.G5,N.C6,N.E6].forEach((f,i)=>playTone(f,t+i*.09,.18,'square',.15));
+}
+function sfxCatch(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  [N.C5,N.G5,N.E6,N.C6,N.G5].forEach((f,i)=>playTone(f,t+i*.08,.13,'triangle',.14));
+}
+function sfxDamage(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  playTone(N.E3,t,.06,'sawtooth',.20);
+  playTone(N.D3,t+.05,.09,'sawtooth',.16);
+}
+function sfxVictory(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  [N.C5,N.C5,N.C5,N.G4,N.E5,N.C5,N.G4,N.E5].forEach((f,i)=>playTone(f,t+i*.1,.14,'square',.16));
+}
+function sfxBattleStart(){
+  if(sfxMuted)return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  [N.G4,N.G4,N.A4,N.G4].forEach((f,i)=>playTone(f,t+i*.1,.12,'square',.16));
+  playTone(N.C5,t+.42,.35,'square',.17);
+}
+
+// Resume AudioContext on first interaction
+document.addEventListener('click',()=>{getCtx();},{once:true});
+</script>
+</body>
+</html>
